@@ -18,27 +18,13 @@ torch.backends.cudnn.allow_tf32 = True
 
 # Define the attributes for multi-objective reward modeling
 attributes = [
-    "helpsteer-helpfulness",
-    "helpsteer-correctness",
-    "helpsteer-coherence",
-    "helpsteer-complexity",
-    "helpsteer-verbosity",
-    "ultrafeedback-overall_score",
-    "ultrafeedback-instruction_following",
-    "ultrafeedback-truthfulness",
-    "ultrafeedback-honesty",
-    "ultrafeedback-helpfulness",
-    "beavertails-is_safe",
-    "prometheus-score",
-    "argilla-overall_quality",
-    "argilla-judge_lm",
-    "code-complexity",
-    "code-style",
-    "code-explanation",
-    "code-instruction-following",
-    "code-readability",
+    "Contextual_Alignment",
+    "Character_Consistency",
+    "Descriptive_Depth",
+    "Role_Specific_Knowledge",
+    "Engagement_and_Collaboration",
+    "Creativity_and_Emotional_Nuance",
 ]
-
 
 class GatingNetwork(nn.Module):
     """
@@ -360,10 +346,10 @@ args.multi_objective_dataset_name = args.multi_objective_dataset.split("/")[-1]
 args.preference_dataset_name = args.preference_dataset.split("/")[-1]
 args.reference_dataset_name = args.reference_dataset.split("/")[-1]
 
-args.embedding_path = f"{HOME}/data/ArmoRM/embeddings/{args.model_name}/{args.preference_dataset_name}*.safetensors"
-args.regression_layer_path = f"{HOME}/data/ArmoRM/regression_weights/{args.model_name}_{args.multi_objective_dataset_name}.pt"
+args.embedding_path = f"./embeddings/{args.model_name}/{args.preference_dataset_name}-train/0001.safetensors"
+args.regression_layer_path = f"./stage1_train_{args.multi_objective_dataset_name}/FsfairX-LLaMA3-RM-v0.1_{args.multi_objective_dataset_name}.pt"
 args.reward_bench_embedding_path = (
-    f"{HOME}/data/ArmoRM/embeddings/{args.model_name}/reward-bench-filtered.safetensors"
+    f"./embeddings/{args.model_name}/reward-bench-filtered.safetensors"
 )
 
 device = f"cuda:{args.device}" if args.device >= 0 else "cpu"
@@ -382,9 +368,9 @@ print("Loading regression layer...")
 regression_layer = torch.load(args.regression_layer_path, map_location=device)["weight"]
 
 n_attributes, hidden_size = regression_layer.shape
-
+print(f"Loaded regression layer with shape: {regression_layer.shape}")
 # Load reference dataset embeddings
-embedding_path = f"{HOME}/data/ArmoRM/embeddings/{args.model_name}/{args.reference_dataset_name}*.safetensors"
+embedding_path = f"./embeddings/{args.model_name}/{args.reference_dataset_name}-train/0001.safetensors"
 ref_embeddings, ref_prompt_embeddings = load_embeddings(embedding_path, device=device)
 
 # Calculate pairwise rewards and rewards difference
@@ -468,7 +454,7 @@ with torch.no_grad():
     print(f"Validation accuracy: {acc_val.item():.4f}")
 
 # Save the trained gating network
-save_path = f"{HOME}/data/ArmoRM/gating_network_{args.model_name}.pt"
+save_path = f"./stage1_train_{args.multi_objective_dataset_name}/FsfairX-LLaMA3-RM-v0.1_gating_{args.multi_objective_dataset_name}.pt"
 torch.save(gating_network.state_dict(), save_path)
 print(f"Saved gating network to {save_path}")
 
@@ -480,10 +466,19 @@ if args.eval_reward_bench:
     )
     with torch.no_grad():
         gating_weights_rb = gating_network(reward_bench_prompt_embeddings)
+        scores = reward_bench_embeddings @ regression_layer.T * gating_weights_rb
+        print(
+            f"RewardBench scores shape: {scores.shape}, gating weights shape: {gating_weights_rb.shape}"
+        )
+        print(
+            f"RewardBench scores: {scores}, gating weights: {gating_weights_rb}"
+        )
         pred_rb = torch.sum(
             reward_bench_embeddings @ regression_layer.T * gating_weights_rb, dim=-1
         )
         correct_rb = (pred_rb[:, 0] > pred_rb[:, 1]).float()
+
+    print(f"RewardBench accuracy: {correct_rb} {len(correct_rb)} accuracy: {correct_rb.mean().item():.4f}") 
 
     reward_bench_ds = datasets.load_dataset("allenai/reward-bench", split="filtered")
     df_examples = pd.DataFrame(

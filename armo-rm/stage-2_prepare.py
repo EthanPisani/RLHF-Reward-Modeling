@@ -107,6 +107,9 @@ model = AutoModel.from_pretrained(
     torch_dtype=torch.bfloat16,  # Use bfloat16 precision for model weights to save memory
     device_map=device,
     attn_implementation="flash_attention_2",  # Specify the attention implementation for efficiency
+    # use int8
+
+
 )
 tokenizer = AutoTokenizer.from_pretrained(args.model_path)
 

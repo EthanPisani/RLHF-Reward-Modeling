@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Analysis Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .attribute {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .attribute-name {
+            font-weight: bold;
+        }
+        .attribute-score {
+            color: #333;
+        }
+        .chart-container {
+            margin-top: 30px;
+            height: 400px;
+        }
+        .instructions {
+            margin-bottom: 20px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Text Quality Analysis</h1>
+        <p class="instructions">Enter a conversation between User and Assistant (format: "User: ... Assistant: ...") or just a single message to analyze its quality attributes.</p>
+        
+        <textarea id="textInput" placeholder="User: Hello there...&#10;Assistant: Hi! How can I help you today?"></textarea>
+        <button onclick="analyzeText()">Analyze Text</button>
+        
+        <div class="results" id="results" style="display: none;">
+            <h2>Analysis Results</h2>
+            <div id="attributeList"></div>
+            <div class="chart-container">
+                <canvas id="resultsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let resultsChart = null;
+        
+        function analyzeText() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                alert('Please enter some text to analyze');
+                return;
+            }
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('attributeList').innerHTML = '<p>Analyzing...</p>';
+            
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('attributeList').innerHTML = 
+                        `<p style="color: red;">Error: ${data.error}</p>`;
+                    return;
+                }
+                
+                // Display attribute scores
+                let html = '';
+                const labels = [];
+                const scores = [];
+                
+                for (const [attribute, score] of Object.entries(data)) {
+                    if (attribute === 'error') continue;
+                    
+                    // Format attribute name for display
+                    const displayName = attribute.replace(/_/g, ' ');
+                    
+                    html += `
+                        <div class="attribute">
+                            <span class="attribute-name">${displayName}</span>
+                            <span class="attribute-score">${score.toFixed(2)}</span>
+                        </div>
+                    `;
+                    
+                    labels.push(displayName);
+                    scores.push(score);
+                }
+                
+                document.getElementById('attributeList').innerHTML = html;
+                
+                // Create/update chart
+                const ctx = document.getElementById('resultsChart').getContext('2d');
+                
+                if (resultsChart) {
+                    resultsChart.data.labels = labels;
+                    resultsChart.data.datasets[0].data = scores;
+                    resultsChart.update();
+                } else {
+                    resultsChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Score',
+                                data: scores,
+                                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 10,
+                                    title: {
+                                        display: true,
+                                        text: 'Score (0-10)'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Attributes'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                document.getElementById('attributeList').innerHTML = 
+                    `<p style="color: red;">Error: ${error.message}</p>`;
+            });
+        }
+    </script>
+</body>
+</html>

@@ -57,25 +57,12 @@ args.dataset_name = args.dataset_path.split("/")[-1]
 # ---------------------------
 # Define the reward attributes as per the method overview in README.md
 attributes = [
-    "helpsteer-helpfulness",
-    "helpsteer-correctness",
-    "helpsteer-coherence",
-    "helpsteer-complexity",
-    "helpsteer-verbosity",
-    "ultrafeedback-overall_score",
-    "ultrafeedback-instruction_following",
-    "ultrafeedback-truthfulness",
-    "ultrafeedback-honesty",
-    "ultrafeedback-helpfulness",
-    "beavertails-is_safe",
-    "prometheus-score",
-    "argilla-overall_quality",
-    "argilla-judge_lm",
-    "code-complexity",
-    "code-style",
-    "code-explanation",
-    "code-instruction-following",
-    "code-readability",
+    "Contextual_Alignment",
+    "Character_Consistency",
+    "Descriptive_Depth",
+    "Role_Specific_Knowledge",
+    "Engagement_and_Collaboration",
+    "Creativity_and_Emotional_Nuance",
 ]
 
 # Set the home directory
@@ -90,8 +77,10 @@ else:
     )
 
 # Collect all embedding files matching the pattern embeddings_path-*.safetensors
-embedding_files = sorted(glob(f"{embeddings_path}-*.safetensors"))
-
+print(f"Searching for embedding files in {embeddings_path}...")
+embedding_files = sorted(glob(f"{embeddings_path}*.safetensors"))
+print(f"Total embedding files found: {len(embedding_files)}")
+# embedding_files = embedding_files["/mnt/m2kingston/dev/ai/RLHF-Reward-Modeling/armo-rm/stage1_embed/-00001-of-00001.safetensors"]
 # ---------------------------
 # Loading Embeddings and Labels
 # ---------------------------

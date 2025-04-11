@@ -172,3 +172,11 @@ bt_models/gemma2b_rm/
 transfer_dataset.py
 transfer_models.py
 upload.py
+
+# thesis
+embeddings
+stage1*
+UltraFeedback-preference-standard
+pair_data_v2_80K_wsafety
+/ArmoRM-Multi-Objective-Data-v0.1/*
+ArmoRM-Multi-Objective-Data-v0.1
