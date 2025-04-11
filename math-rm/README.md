@@ -67,6 +67,12 @@ Running the code for PRM/ORM.
 torchrun --nproc_per_node 8 --master_port 20001 -m axolotl.cli.train llama-3.1-prm.yaml --deepspeed ../deepspeed_configs/deepspeed_3.json
 ```
 
+For completeness, we also present a version of scalar ORM implemention. The use of this version is very similar to the Braldey-Terry reward model. 
+
+```shell
+accelerate launch ./scalar_orm_train.py --deepspeed ../deepspeed_configs/deepspeed_3.json
+```
+
 ## Usage Example for Pairwise Comparison
 
 We provide test sets on GSM8K and MATH500 for best-of-N evaluation
@@ -227,7 +233,7 @@ We train the ORM for 1 epoch with a block size of 8192 a learning rate of 2e-6 a
 
 | Model         | Method                    | GSM8K | MATH |
 | ------------- | ------------- | ------------- | -------- |
-| Deepseek-7B | Pass@1 | 83.9 | 38.4 |
+| Deepseek-7B | Pass@1 | 83.9 | 42.4 |
 | Deepseek-7B | Majority Voting@1024 | 89.7 | 57.4  |
 | Deepseek-7B | Deepseek-ORM@1024 | 93.4 | 52.4 |
 | Deepseek-7B | Deepseek-PRM@1024 | 93.0 | 58.1 |
