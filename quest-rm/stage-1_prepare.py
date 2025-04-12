@@ -17,25 +17,12 @@ torch.backends.cudnn.allow_tf32 = (
 
 # Define attributes (reward objectives)
 attributes = [
-    "helpsteer-helpfulness",
-    "helpsteer-correctness",
-    "helpsteer-coherence",
-    "helpsteer-complexity",
-    "helpsteer-verbosity",
-    "ultrafeedback-overall_score",
-    "ultrafeedback-instruction_following",
-    "ultrafeedback-truthfulness",
-    "ultrafeedback-honesty",
-    "ultrafeedback-helpfulness",
-    "beavertails-is_safe",
-    "prometheus-score",
-    "argilla-overall_quality",
-    "argilla-judge_lm",
-    "code-complexity",
-    "code-style",
-    "code-explanation",
-    "code-instruction-following",
-    "code-readability",
+    "Contextual_Alignment",
+    "Character_Consistency",
+    "Descriptive_Depth",
+    "Role_Specific_Knowledge",
+    "Engagement_and_Collaboration",
+    "Creativity_and_Emotional_Nuance",
 ]
 
 # Initialize the argument parser to handle command-line inputs
@@ -70,11 +57,22 @@ args = parser.parse_args()  # Parse the provided command-line arguments
 ds = datasets.load_dataset(args.dataset_path)[
     "train"
 ]  # Load the training split of the dataset
+
+# rname message to messages
+ds = ds.rename_column("message", "messages")
+# remove data with nulls or 0 values
+for attr in attributes:
+    ds = ds.filter(lambda x: x[attr] is not None and x[attr] != 0)
+# keep first 50k
+ds = ds.select(range(100000))
+
 ds = ds.shuffle(seed=0)  # Shuffle the dataset to ensure randomness
 if args.n_shards > 1:
     ds = ds.shard(
         num_shards=args.n_shards, index=args.shard_idx - 1
     )  # Divide dataset into shards if needed
+
+
 
 # Load the pre-trained model and tokenizer from the specified path
 rm = AutoModel.from_pretrained(
